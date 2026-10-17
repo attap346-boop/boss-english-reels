@@ -14,7 +14,8 @@ jobs:
 
       - name: Unpack reel code
         run: |
-          gunzip -c make_boss_reel.py.gz > make_boss_reel.py
+          cat make_boss_reel.part*.gz | gunzip > make_boss_reel.py
+          python3 -m py_compile make_boss_reel.py
           gunzip -c content.json.gz > content.json
 
       - name: Install tools
