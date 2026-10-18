@@ -1,3 +1,4 @@
+---
 name: Boss English reel
 
 on:
@@ -17,8 +18,11 @@ jobs:
           cat make_boss_reel.part*.gz | gunzip > make_boss_reel.py
           gunzip -c gen.diff.gz > gen.diff
           patch -p0 make_boss_reel.py < gen.diff
+          gunzip -c shadow.diff.gz > shadow.diff
+          patch -p0 make_boss_reel.py < shadow.diff
+          gunzip -c shadow_reel.py.gz > shadow_reel.py
           for f in content_new*.json.gz; do gunzip -c "$f" > "${f%.gz}"; done
-          python3 -m py_compile make_boss_reel.py
+          python3 -m py_compile make_boss_reel.py shadow_reel.py
           gunzip -c content.json.gz > content.json
 
       - name: Install tools
@@ -47,8 +51,8 @@ jobs:
 
       - name: Commit
         run: |
-          git config user.name "reel-bot"
           git config user.email "reel-bot@users.noreply.github.com"
+          git config user.name "reel-bot"
           git add reels
           git diff --cached --quiet || git commit -m "Reel $(date -u +%F)"
           git push
