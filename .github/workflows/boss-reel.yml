@@ -15,6 +15,9 @@ jobs:
       - name: Unpack reel code
         run: |
           cat make_boss_reel.part*.gz | gunzip > make_boss_reel.py
+          gunzip -c gen.diff.gz > gen.diff
+          patch -p0 make_boss_reel.py < gen.diff
+          for f in content_new*.json.gz; do gunzip -c "$f" > "${f%.gz}"; done
           python3 -m py_compile make_boss_reel.py
           gunzip -c content.json.gz > content.json
 
