@@ -3,6 +3,11 @@ name: Boss English reel
 
 on:
   workflow_dispatch:
+    inputs:
+      date:
+        description: optional test date
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -22,6 +27,8 @@ jobs:
           patch -p0 make_boss_reel.py < shadow.diff
           gunzip -c shadow_reel.py.gz > shadow_reel.py
           for f in content_new*.json.gz; do gunzip -c "$f" > "${f%.gz}"; done
+          sed -i 's/types = \["structure", "mistake", "shadow", "translate"/types = ["structure", "shadow", "mistake", "translate"/' make_boss_reel.py
+          grep -n 'types = ' make_boss_reel.py
           python3 -m py_compile make_boss_reel.py shadow_reel.py
           gunzip -c content.json.gz > content.json
 
@@ -42,7 +49,7 @@ jobs:
           curl -fL -A "Mozilla/5.0" --retry 3 -o audio.wav "$URL" || ffmpeg -y -loglevel error -f lavfi -i "sine=f=220:d=60" -f lavfi -i "sine=f=261.63:d=60" -f lavfi -i "sine=f=329.63:d=60" -filter_complex "amix=inputs=3,volume=0.25,tremolo=f=0.2:d=0.4" audio.wav
 
       - name: Build reel
-        run: python3 make_boss_reel.py --audio audio.wav
+        run: python3 make_boss_reel.py --audio audio.wav ${{ github.event.inputs.date != '' && format('--date {0}', github.event.inputs.date) || '' }}
 
       - name: Keep only the last 30 reels
         run: |
