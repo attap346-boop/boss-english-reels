@@ -36,7 +36,22 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg fonts-freefont-ttf
-          pip install --quiet pillow edge-tts gTTS
+          pip install --quiet pillow numpy edge-tts gTTS
+
+      - name: Modern reel (alternate days, falls back to old builder)
+        id: modern
+        continue-on-error: true
+        run: |
+          gunzip -c modern_reel.py.gz > modern_reel.py
+          python3 -m py_compile modern_reel.py
+          mkdir -p fonts
+          for f in Bold Medium Regular; do curl -fsSL -o fonts/Poppins-$f.ttf "https://github.com/google/fonts/raw/main/ofl/poppins/Poppins-$f.ttf" || rm -f fonts/Poppins-$f.ttf; done
+          D="${{ github.event.inputs.date }}"
+          [ -z "$D" ] && D=$(TZ=Asia/Kolkata date +%F)
+          DOY=$(date -d "$D" +%j)
+          if [ $((10#$DOY % 2)) -eq 0 ]; then
+            python3 modern_reel.py --date "$D" && echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Get royalty-free music (CC0)
         run: |
@@ -49,6 +64,7 @@ jobs:
           curl -fL -A "Mozilla/5.0" --retry 3 -o audio.wav "$URL" || ffmpeg -y -loglevel error -f lavfi -i "sine=f=220:d=60" -f lavfi -i "sine=f=261.63:d=60" -f lavfi -i "sine=f=329.63:d=60" -filter_complex "amix=inputs=3,volume=0.25,tremolo=f=0.2:d=0.4" audio.wav
 
       - name: Build reel
+        if: steps.modern.outputs.ok != 'true'
         run: python3 make_boss_reel.py --audio audio.wav ${{ github.event.inputs.date != '' && format('--date {0}', github.event.inputs.date) || '' }}
 
       - name: Keep only the last 30 reels
